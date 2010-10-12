@@ -1,0 +1,56 @@
+{% load i18n %}
+{% load timezone_filters %}
+{% load avatar_tags %}
+
+{% if message_list %}
+<div id="accordion-inbox" class="accordion">
+  {% for message in message_list %} 
+  <div class="header">
+    <a href="{% url messages_mark_as_read message.id %}">
+      {% if message.subject %}
+      {% if message.new %}<strong>{% endif %}
+	{% if message.replied %}<em>{% endif %}
+	  {{message.subject}}
+	{% if message.replied %}</em>{% endif %}
+      {% if message.new %}</strong>{% endif %}
+      {% else %}
+      {% trans "(none)" %}
+      {% endif %}
+
+      <div class="extra-info">
+	{{message.sent_at|localtime:account.timezone|date:_("DATETIME_FORMAT")}}
+	from {{message.sender}}
+      </div>
+    </a>
+  </div>
+  <div>
+    <div class="userbox">
+      <a href="{% url profile_detail message.sender %}">{% avatar message.sender %}</a><br />
+      <small><a href="{% url profile_detail message.sender %}">{{message.sender}}</a></small>
+    </div>
+    <div class="messagetext"><p>{{message.body|linebreaksbr}}</p></div>
+    <div class="messagelinks">
+      <p>
+	  <a class="ui-button ui-priority-primary" href="{% url messages_reply message.id %}?next={% url messages %}">{% trans "Reply" %}</a>
+	  <a class="ui-button" href="{% url messages_delete message.id %}?next={% url messages %}">{% trans "Delete" %}</a>
+      </p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script type="text/javascript">
+$("#accordion-inbox").accordion({
+    active: false,
+    header: 'div.header',
+    change: function (event, ui) {
+        var url = $("a", ui.newHeader).attr("href");
+
+        $.get(url);
+    },
+});
+</script>
+
+{% else %}
+<p>{% trans "No messages." %}</p>
+{% endif %}  

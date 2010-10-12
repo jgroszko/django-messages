@@ -1,0 +1,42 @@
+{% load i18n %} 
+{% load timezone_filters %}
+
+{% if message_list %} 
+<div id="accordion-trash" class="accordion">
+  {% for message in message_list %}
+  <div class="header">
+    <a href="{% url messages_mark_as_read message.id %}">
+      {% if message.subject %}
+      {{message.subject}}
+      {% else %}
+      {% trans "(none)" %}
+      {% endif %}
+
+      <div class="extra-info">
+	{{message.sent_at|localtime:account.timezone|date:_("DATETIME_FORMAT")}}
+	to {{message.sender}}
+      </div>
+    </a>
+  </div>
+  <div>
+    <div class="messagetext"><p>{{message.body|linebreaksbr}}</p></div>
+    <div class="messagelinks">
+      <p>
+	  <a class="ui-button" href="{% url messages_undelete message.id %}?next={% url messages %}#ui-tabs-4">{% trans "Undelete" %}</a>
+      </p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script type="text/javascript">
+$("#accordion-trash").accordion({
+    active: false,
+    header: 'div.header',
+});
+</script>
+{% else %}
+<p>{% trans "No messages." %}</p>
+{% endif %}   
+<br />
+<p>{% trans "Deleted Messages are removed from the trash at unregular intervals, don't rely on this feature for long-time storage." %}</p>

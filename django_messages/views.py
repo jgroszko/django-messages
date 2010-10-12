@@ -1,5 +1,5 @@
 import datetime
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.models import User
@@ -18,31 +18,44 @@ if "notification" in settings.INSTALLED_APPS:
 else:
     notification = None
 
-def inbox(request, template_name='django_messages/inbox.html'):
+def inbox(request, **kwargs):
     """
     Displays a list of received messages for the current user.
     Optional Arguments:
         ``template_name``: name of the template to use.
+        ``template_name_ajax``: name of the template to use when view is called through ajax.
     """
+    template_name = kwargs.get("template_name", "django_messages/inbox.html")
+    if request.is_ajax():
+        template_name = kwargs.get(
+            "template_name_ajax",
+            "django_messages/inbox_ajax.html")
+
     message_list = Message.objects.inbox_for(request.user)
     return render_to_response(template_name, {
         'message_list': message_list,
     }, context_instance=RequestContext(request))
 inbox = login_required(inbox)
 
-def outbox(request, template_name='django_messages/outbox.html'):
+def outbox(request, **kwargs):
     """
     Displays a list of sent messages by the current user.
     Optional arguments:
         ``template_name``: name of the template to use.
     """
+    template_name = kwargs.get("template_name", "django_messages/outbox.html")
+    if request.is_ajax():
+        template_name = kwargs.get(
+            "template_name_ajax",
+            "django_messages/outbox_ajax.html")
+
     message_list = Message.objects.outbox_for(request.user)
     return render_to_response(template_name, {
         'message_list': message_list,
     }, context_instance=RequestContext(request))
 outbox = login_required(outbox)
 
-def trash(request, template_name='django_messages/trash.html'):
+def trash(request, **kwargs):
     """
     Displays a list of deleted messages. 
     Optional arguments:
@@ -50,6 +63,12 @@ def trash(request, template_name='django_messages/trash.html'):
     Hint: A Cron-Job could periodicly clean up old messages, which are deleted
     by sender and recipient.
     """
+    template_name = kwargs.get("template_name", "django_messages/trash.html")
+    if request.is_ajax():
+        template_name = kwargs.get(
+            "template_name_ajax",
+            "django_messages/trash_ajax.html")
+
     message_list = Message.objects.trash_for(request.user)
     return render_to_response(template_name, {
         'message_list': message_list,
@@ -78,8 +97,8 @@ def compose(request, recipient=None, form_class=ComposeForm,
                 message=_(u"Message successfully sent."))
             if success_url is None:
                 success_url = reverse('messages_inbox')
-            if request.GET.has_key('next'):
-                success_url = request.GET['next']
+            if request.REQUEST.has_key('next'):
+                success_url = request.REQUEST['next']
             return HttpResponseRedirect(success_url)
     else:
         form = form_class()
@@ -103,6 +122,11 @@ def reply(request, message_id, form_class=ComposeForm,
     """
     parent = get_object_or_404(Message, id=message_id)
     
+    if success_url is None:
+        success_url = reverse('messages_inbox')
+    if request.GET.has_key('next'):
+        success_url = request.GET['next']
+
     if parent.sender != request.user and parent.recipient != request.user:
         raise Http404
     
@@ -113,8 +137,6 @@ def reply(request, message_id, form_class=ComposeForm,
             form.save(sender=request.user, parent_msg=parent)
             request.user.message_set.create(
                 message=_(u"Message successfully sent."))
-            if success_url is None:
-                success_url = reverse('messages_inbox')
             return HttpResponseRedirect(success_url)
     else:
         form = form_class(initial={
@@ -124,6 +146,7 @@ def reply(request, message_id, form_class=ComposeForm,
             })
     return render_to_response(template_name, {
         'form': form,
+        'success_url': success_url,
     }, context_instance=RequestContext(request))
 reply = login_required(reply)
 
@@ -188,6 +211,18 @@ def undelete(request, message_id, success_url=None):
         return HttpResponseRedirect(success_url)
     raise Http404
 undelete = login_required(undelete)
+
+def mark_as_read(request, message_id):
+    if not request.is_ajax():
+        raise Http404
+
+    message = get_object_or_404(Message, id=message_id)
+
+    if message.read_at is None and message.recipient == request.user:
+        message.read_at = datetime.datetime.now()
+        message.save()
+
+    return HttpResponse()
 
 def view(request, message_id, template_name='django_messages/view.html'):
     """
