@@ -60,6 +60,7 @@ def trash(request, **kwargs):
     Displays a list of deleted messages. 
     Optional arguments:
         ``template_name``: name of the template to use
+        ``template_name_ajax``: the template to use if request is ajax
     Hint: A Cron-Job could periodicly clean up old messages, which are deleted
     by sender and recipient.
     """
@@ -76,7 +77,7 @@ def trash(request, **kwargs):
 trash = login_required(trash)
 
 def compose(request, recipient=None, form_class=ComposeForm,
-        template_name='django_messages/compose.html', success_url=None, recipient_filter=None):
+        template_name='django_messages/compose.html', success_url=None, recipient_filter=None, **kwargs):
     """
     Displays and handles the ``form_class`` form to compose new messages.
     Required Arguments: None
@@ -86,8 +87,19 @@ def compose(request, recipient=None, form_class=ComposeForm,
                        could be separated by a '+'
         ``form_class``: the form-class to use
         ``template_name``: the template to use
+        ``template_name_ajax``: the template to use if request is ajax
         ``success_url``: where to redirect after successfull submission
     """
+    if request.is_ajax():
+        template_name = kwargs.get(
+            "template_name_ajax",
+            "django_messages/compose_ajax.html")
+
+    if success_url is None:
+        success_url = reverse('messages_inbox')
+    if request.REQUEST.has_key('next'):
+        success_url = request.REQUEST['next']
+
     if request.method == "POST":
         sender = request.user
         form = form_class(request.POST, recipient_filter=recipient_filter)
@@ -95,10 +107,6 @@ def compose(request, recipient=None, form_class=ComposeForm,
             form.save(sender=request.user)
             request.user.message_set.create(
                 message=_(u"Message successfully sent."))
-            if success_url is None:
-                success_url = reverse('messages_inbox')
-            if request.REQUEST.has_key('next'):
-                success_url = request.REQUEST['next']
             return HttpResponseRedirect(success_url)
     else:
         form = form_class()
@@ -107,12 +115,13 @@ def compose(request, recipient=None, form_class=ComposeForm,
             form.fields['recipient'].initial = recipients
     return render_to_response(template_name, {
         'form': form,
+        'success_url': success_url
     }, context_instance=RequestContext(request))
 compose = login_required(compose)
 
 def reply(request, message_id, form_class=ComposeForm,
         template_name='django_messages/compose.html', success_url=None, 
-        recipient_filter=None, quote_helper=format_quote):
+        recipient_filter=None, quote_helper=format_quote, **kwargs):
     """
     Prepares the ``form_class`` form for writing a reply to a given message
     (specified via ``message_id``). Uses the ``format_quote`` helper from
@@ -122,6 +131,11 @@ def reply(request, message_id, form_class=ComposeForm,
     """
     parent = get_object_or_404(Message, id=message_id)
     
+    if request.is_ajax():
+        template_name = kwargs.get(
+            "template_name_ajax",
+            "django_messages/compose_ajax.html")
+
     if success_url is None:
         success_url = reverse('messages_inbox')
     if request.GET.has_key('next'):

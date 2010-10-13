@@ -1,5 +1,6 @@
 {% load i18n %} 
 {% load timezone_filters %}
+{% load avatar_tags %}
 
 {% if message_list %} 
 <div id="accordion-trash" class="accordion">
@@ -19,6 +20,10 @@
     </a>
   </div>
   <div>
+    <div class="userbox">
+      <a href="{% url profile_detail message.sender %}">{% avatar message.sender %}</a><br />
+      <small><a href="{% url profile_detail message.sender %}">{{message.sender}}</a></small>
+    </div>
     <div class="messagetext"><p>{{message.body|linebreaksbr}}</p></div>
     <div class="messagelinks">
       <p>

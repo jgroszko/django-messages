@@ -31,7 +31,7 @@
     <div class="messagetext"><p>{{message.body|linebreaksbr}}</p></div>
     <div class="messagelinks">
       <p>
-	  <a class="ui-button ui-priority-primary" href="{% url messages_reply message.id %}?next={% url messages %}">{% trans "Reply" %}</a>
+	  <a class="ui-ajaxdialog ui-button ui-priority-primary" href="{% url messages_reply message.id %}?next={% url messages %}">{% trans "Reply" %}</a>
 	  <a class="ui-button" href="{% url messages_delete message.id %}?next={% url messages %}">{% trans "Delete" %}</a>
       </p>
     </div>
