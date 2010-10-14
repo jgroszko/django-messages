@@ -1,8 +1,10 @@
 {% load i18n %}
 {% load timezone_filters %}
 {% load avatar_tags %}
+{% load pagination_tags %}
 
 {% if message_list %}
+{% autopaginate message_list %}
 <div id="accordion-inbox" class="accordion">
   {% for message in message_list %} 
   <div class="header">
@@ -38,6 +40,7 @@
   </div>
   {% endfor %}
 </div>
+{% paginate %}
 
 <script type="text/javascript">
 $("#accordion-inbox").accordion({
