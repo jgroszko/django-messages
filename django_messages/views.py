@@ -18,18 +18,17 @@ if "notification" in settings.INSTALLED_APPS:
 else:
     notification = None
 
-def inbox(request, **kwargs):
+def inbox(request,
+          template_name="django_messages/inbox.html",
+          template_name_ajax="django_messages/inbox_ajax.html"):
     """
     Displays a list of received messages for the current user.
     Optional Arguments:
         ``template_name``: name of the template to use.
         ``template_name_ajax``: name of the template to use when view is called through ajax.
     """
-    template_name = kwargs.get("template_name", "django_messages/inbox.html")
     if request.is_ajax():
-        template_name = kwargs.get(
-            "template_name_ajax",
-            "django_messages/inbox_ajax.html")
+        template_name = template_name_ajax
 
     message_list = Message.objects.inbox_for(request.user)
     return render_to_response(template_name, {
@@ -37,17 +36,16 @@ def inbox(request, **kwargs):
     }, context_instance=RequestContext(request))
 inbox = login_required(inbox)
 
-def outbox(request, **kwargs):
+def outbox(request,
+           template_name="django_messages/outbox.html",
+           template_name_ajax="django_messages/outbox_ajax.html"):
     """
     Displays a list of sent messages by the current user.
     Optional arguments:
         ``template_name``: name of the template to use.
     """
-    template_name = kwargs.get("template_name", "django_messages/outbox.html")
     if request.is_ajax():
-        template_name = kwargs.get(
-            "template_name_ajax",
-            "django_messages/outbox_ajax.html")
+        template_name = template_name_ajax
 
     message_list = Message.objects.outbox_for(request.user)
     return render_to_response(template_name, {
@@ -55,7 +53,9 @@ def outbox(request, **kwargs):
     }, context_instance=RequestContext(request))
 outbox = login_required(outbox)
 
-def trash(request, **kwargs):
+def trash(request,
+          template_name="django_messages/trash.html",
+          template_name_ajax="django_messages/trash_ajax.html"):
     """
     Displays a list of deleted messages. 
     Optional arguments:
@@ -64,11 +64,8 @@ def trash(request, **kwargs):
     Hint: A Cron-Job could periodicly clean up old messages, which are deleted
     by sender and recipient.
     """
-    template_name = kwargs.get("template_name", "django_messages/trash.html")
     if request.is_ajax():
-        template_name = kwargs.get(
-            "template_name_ajax",
-            "django_messages/trash_ajax.html")
+        template_name = template_name_ajax
 
     message_list = Message.objects.trash_for(request.user)
     return render_to_response(template_name, {
@@ -77,7 +74,9 @@ def trash(request, **kwargs):
 trash = login_required(trash)
 
 def compose(request, recipient=None, form_class=ComposeForm,
-        template_name='django_messages/compose.html', success_url=None, recipient_filter=None, **kwargs):
+            template_name='django_messages/compose.html',
+            template_name_ajax='django_messages/compose_ajax.html',
+            success_url=None, recipient_filter=None):
     """
     Displays and handles the ``form_class`` form to compose new messages.
     Required Arguments: None
@@ -91,9 +90,7 @@ def compose(request, recipient=None, form_class=ComposeForm,
         ``success_url``: where to redirect after successfull submission
     """
     if request.is_ajax():
-        template_name = kwargs.get(
-            "template_name_ajax",
-            "django_messages/compose_ajax.html")
+        template_name = template_name_ajax
 
     if success_url is None:
         success_url = reverse('messages_inbox')
@@ -120,8 +117,9 @@ def compose(request, recipient=None, form_class=ComposeForm,
 compose = login_required(compose)
 
 def reply(request, message_id, form_class=ComposeForm,
-        template_name='django_messages/compose.html', success_url=None, 
-        recipient_filter=None, quote_helper=format_quote, **kwargs):
+          template_name='django_messages/compose.html', 
+          template_name_ajax='django_messages/compose_ajax.html',
+          success_url=None, recipient_filter=None, quote_helper=format_quote):
     """
     Prepares the ``form_class`` form for writing a reply to a given message
     (specified via ``message_id``). Uses the ``format_quote`` helper from
@@ -132,9 +130,7 @@ def reply(request, message_id, form_class=ComposeForm,
     parent = get_object_or_404(Message, id=message_id)
     
     if request.is_ajax():
-        template_name = kwargs.get(
-            "template_name_ajax",
-            "django_messages/compose_ajax.html")
+        template_name = template_name_ajax
 
     if success_url is None:
         success_url = reverse('messages_inbox')
@@ -238,6 +234,7 @@ def mark_as_read(request, message_id):
 
     return HttpResponse()
 
+@login_required
 def view(request, message_id, template_name='django_messages/view.html'):
     """
     Shows a single message.``message_id`` argument is required.
@@ -258,4 +255,4 @@ def view(request, message_id, template_name='django_messages/view.html'):
     return render_to_response(template_name, {
         'message': message,
     }, context_instance=RequestContext(request))
-view = login_required(view)
+
