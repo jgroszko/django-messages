@@ -6,6 +6,7 @@
 <table>
 {% if success_url %}<input type="hidden" name="next" value="{{success_url}}" />{% endif %}
 {{ form.as_table }}
+<tr><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td><input type="submit" value="{% trans "Send" %} &raquo;"/></td></tr>
 </table>
-<input type="submit" value="{% trans "Send" %} &raquo;"/>
 </form>
